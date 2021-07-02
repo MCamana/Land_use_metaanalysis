@@ -1,6 +1,7 @@
 #####Metaanalysis test#####
 library (metafor)
 library(here)
+library(robumeta)
 
 ####First, Ill make a more simple model####
 data_test <- read.table(here ("data","processed","data_test.txt"), h=T) ##All data
@@ -73,173 +74,53 @@ fsn (yi, vi, data=dat.test, type="Orwin", target= -0.132) ## Para obter quantos 
 x11()
 funnel (res.fe1)
 
-####Now, Ill use the data of RICHNESS as a test. First, Ill make the analisys with all data, just as exploratory test####
-####Fishes#### 
-##All
-data_fishall <- read.table(here ("data","processed","fish_all.txt"), h=T) ##All data
-colnames(data_fishall)
-str(data_fishall)
 
-dat.fishall<- escalc(measure="COR", ri=Effect_size, ni=N_sample, vtype = "LS",
-                   data=data_fishall, append=TRUE) #método para valores de correlação
+####Trying make a single robumeta model#### 
+#Fishes
+data_fish <- read.table(here ("data","processed","fishes.txt"), h=T) ##All data
+colnames(data_fish)
+str(data_fish)
 
-res.fe1 <- rma(yi, vi, slab = paste(ID),
-               data= dat.fishall, method = "DL")
-x11()
-forest(res.fe1, atransf = exp)
-text(-3.5, 34, "Article ID", pos = 4, font = 2)
-text(3, 34, "Effect Size [95% CI]", pos = 2, font = 2)
+dat.fish<- escalc(measure="COR", ri=Effect_size, ni=N_sample, vtype = "LS",
+                     data=data_fish, append=TRUE) #método para valores de correlação
 
-fsn (yi, vi, data=dat.test, type="Orwin", target= -0.132) ## Para obter quantos estudos ainda precisariam para deixar de ser significativo
+model_fish<- robu(yi ~ transition-1,
+                     data = dat.fish, 
+                     modelweights = "HIER", studynum = ID,  
+                     var.eff.size = vi , small = T)
+print (model_fish)
 
-x11()
-funnel (res.fe1)
-
-#####Native VEgetation
-fish_veg <- read.table(here ("data","processed","fish_veg.txt"), h=T) ##All data
-colnames(fish_veg)
-str(fish_veg)
-
-fish.veg <- escalc(measure="COR", ri=effect_size, ni=N, vtype = "LS",
-                   data=fish_veg, append=TRUE) #método para valores de correlação
-res.fishveg <- rma(yi, vi,
-                 data= fish.veg, method = "DL",mods = cbind(Original_cover)-1, 
-                 slab = paste(Original_cover, sep=",")) ##I paste the information of native vegetation that will be used in the forest plot
-x11()
-forest(res.fe4.1, atransf = exp)
-text(-3.5, 34, "Native Vegetation", pos = 4, font = 2)
-text(3, 34, "Effect Size [95% CI]", pos = 2, font = 2)
-
-#####Land Use
-
-fish_land <- read.table(here ("data","processed","fish_land.txt"), h=T) ##All data
-colnames(fish_land)
-str(fish_land)
-
-fish.land <- escalc(measure="COR", ri=effect_size, ni=N, vtype = "LS",
-                   data=fish_land, append=TRUE) #método para valores de correlação
-res.land <- rma(yi, vi,
-                 data= fish.land, method = "DL",mods = cbind(Land_use_class)-1, 
-                 slab = paste(Land_use_class, sep=",")) ##I paste the information of native vegetation that will be used in the forest plot
-x11()
-forest(res.land, atransf = exp)
-text(-3.5, 34, "Land Use", pos = 4, font = 2)
-text(3, 34, "Effect Size [95% CI]", pos = 2, font = 2)
-
-##Temperature
-
-fish_temp <- read.table(here ("data","processed","fish_temp.txt"), h=T) ##All data
-colnames(fish_temp)
-str(fish_temp)
-
-fish.temp <- escalc(measure="COR", ri=effect_size, ni=N, vtype = "LS",
-                    data=fish_temp, append=TRUE) #método para valores de correlação
-res.temp <- rma(yi, vi,
-                data= fish.temp, method = "DL",mods = cbind(mean_temp)-1, 
-                slab = paste(legend, sep=",")) ##I paste the information of native vegetation that will be used in the forest plot
-
-summary(lm(lm(yi~mean_temp, data = fish.temp))) ##Seems different. Perharps a metaregression will be more effective
+fit.fish <- rma(yi, vi, slab = paste(Original_cover,Land_use_class, sep = "->"),
+               data= dat.fish, method = "DL")
 
 x11()
-forest(res.temp, atransf = exp)
-text(-3.5, 33, "Temperature [°C]", pos = 4, font = 2)
-text(3, 33, "Effect Size [95% CI]", pos = 2, font = 2)
-
-##Time
-fish_time <- read.table(here ("data","processed","fish_time.txt"), h=T) ##All data
-colnames(fish_time)
-str(fish_time)
-
-fish.time <- escalc(measure="COR", ri=effect_size, ni=N, vtype = "LS",
-                    data=fish_time, append=TRUE) #método para valores de correlação
-res.time <- rma(yi, vi,
-                data= fish.time, method = "DL",mods = cbind(Year_diff)-1, 
-                slab = paste(Year_diff, sep=",")) ##I paste the information of native vegetation that will be used in the forest plot
+forest(fit.fish, atransf = exp)
+text(-3.5, 43, "Transition", pos = 4, font = 2)
+text(3, 43, "Effect Size [95% CI]", pos = 2, font = 2)
 
 x11()
-forest(res.time, atransf = exp)
-text(-3.5, 32, "Years", pos = 4, font = 2)
-text(3, 32, "Effect Size [95% CI]", pos = 2, font = 2)
+funnel (fit.fish)
 
-####Macroinvertebrates####
-##All
-data_macall <- read.table(here ("data","processed","mac_all.txt"), h=T) ##All data
-colnames(data_macall)
-str(data_macall)
 
-dat.macall<- escalc(measure="COR", ri=effect_size, ni=N, vtype = "LS",
-                     data=data_macall, append=TRUE) #método para valores de correlação
+###Macroinvertebrates
 
-res.macall <- rma(yi, vi, slab = paste(ID),
-               data= dat.macall, method = "DL")
+data_macroinv <- read.table(here ("data","processed","macroinvertebrates.txt"), h=T) ##All data
+colnames(data_macroinv)
+str(data_macroinv)
+
+dat.macroinv<- escalc(measure="COR", ri=Effect_size, ni=N_sample, vtype = "LS",
+                     data=data_macroinv, append=TRUE) #método para valores de correlação
+
+model_macroinv<- robu(yi ~ transition-1,
+                     data = dat.macroinv, 
+                     modelweights = "HIER", studynum = ID,  
+                     var.eff.size = vi , small = T)
+print (model_macroinv)
+
+res.macroinv <- rma(yi, vi, slab = paste(Original_cover,Land_use_class, sep = "->"),
+                 data= dat.macroinv, method = "DL")
 x11()
-forest(res.macall, atransf = exp)
-text(-3.5, 168, "Article ID", pos = 4, font = 2)
-text(3, 168, "Effect Size [95% CI]", pos = 2, font = 2)
-
-#####Native VEgetation
-mac_veg <- read.table(here ("data","processed","mac_veg.txt"), h=T) ##All data
-colnames(mac_veg)
-str(mac_veg)
-
-mac.veg <- escalc(measure="COR", ri=effect_size, ni=N, vtype = "LS",
-                   data=mac_veg, append=TRUE) #método para valores de correlação
-res.macveg <- rma(yi, vi,
-                   data= mac.veg, method = "DL",mods = cbind(Original_cover)-1, 
-                   slab = paste(Original_cover, sep=",")) ##I paste the information of native vegetation that will be used in the forest plot
-x11()
-forest(res.macveg, atransf = exp)
-text(-3.5, 77, "Native Vegetation", pos = 4, font = 2)
-text(3, 77, "Effect Size [95% CI]", pos = 2, font = 2)
-
-#####Land Use
-mac_land <- read.table(here ("data","processed","mac_land.txt"), h=T) ##All data
-colnames(mac_land)
-str(mac_land)
-
-mac.land <- escalc(measure="COR", ri=effect_size, ni=N, vtype = "LS",
-                    data=mac_land, append=TRUE) #método para valores de correlação
-res.macland <- rma(yi, vi,
-                data= mac.land, method = "DL",mods = cbind(Land_use_class)-1, 
-                slab = paste(Land_use_class, sep=",")) ##I paste the information of native vegetation that will be used in the forest plot
-x11()
-forest(res.macland, atransf = exp)
-text(-3.5, 84, "Land Use", pos = 4, font = 2)
-text(3, 84, "Effect Size [95% CI]", pos = 2, font = 2)
-
-##Temperature
-
-fish_temp <- read.table(here ("data","processed","fish_temp.txt"), h=T) ##All data
-colnames(fish_temp)
-str(fish_temp)
-
-fish.temp <- escalc(measure="COR", ri=effect_size, ni=N, vtype = "LS",
-                    data=fish_temp, append=TRUE) #método para valores de correlação
-res.temp <- rma(yi, vi,
-                data= fish.temp, method = "DL",mods = cbind(mean_temp)-1, 
-                slab = paste(legend, sep=",")) ##I paste the information of native vegetation that will be used in the forest plot
-
-summary(lm(lm(yi~mean_temp, data = fish.temp))) ##Seems different. Perharps a metaregression will be more effective
-
-x11()
-forest(res.temp, atransf = exp)
-text(-3.5, 33, "Temperature [°C]", pos = 4, font = 2)
-text(3, 33, "Effect Size [95% CI]", pos = 2, font = 2)
-
-##Time
-fish_time <- read.table(here ("data","processed","fish_time.txt"), h=T) ##All data
-colnames(fish_time)
-str(fish_time)
-
-fish.time <- escalc(measure="COR", ri=effect_size, ni=N, vtype = "LS",
-                    data=fish_time, append=TRUE) #método para valores de correlação
-res.time <- rma(yi, vi,
-                data= fish.time, method = "DL",mods = cbind(Year_diff)-1, 
-                slab = paste(Year_diff, sep=",")) ##I paste the information of native vegetation that will be used in the forest plot
-
-x11()
-forest(res.time, atransf = exp)
-text(-3.5, 32, "Years", pos = 4, font = 2)
-text(3, 32, "Effect Size [95% CI]", pos = 2, font = 2)
-
+forest(res.macroinv, atransf = exp)
+text(-3.5, 87, "Transition", pos = 4, font = 2)
+text(3, 87, "Effect Size [95% CI]", pos = 2, font = 2)
 
