@@ -38,24 +38,33 @@ length(unique(dat.macroinv_filt$ID)) #We lost 5 studies
 correl_climate_mac <- cor(dat.macroinv_filt[,c(24:27)]) 
 
 #Generating PCA axes
-dat.macroinv_frame <- as.data.frame(dat.macroinv_filt[,c(24:27, 29)]) #criando um dataframe com as var climáticas
+dat.macroinv_frame <- as.data.frame(dat.macroinv_filt[,c(24:27)]) #criando um dataframe com as var climáticas
 pca_result_mac <- prcomp(dat.macroinv_frame, scale=TRUE) #fazendo a PCA
 PCA1_mac<- as.data.frame(pca_result_mac$x) #Gerando uma matriz com os PC
-Clim_mac <- PCA1_mac[,1] #Gerando uma matriz apenas com o PCA1
-dat.macroinv_filt1 <- cbind(dat.macroinv_filt, Clim_mac) #adicionando à matriz de análise
+Clim_mac1 <- PCA1_mac[,1] #Gerando uma matriz apenas com o PCA1
+dat.macroinv_filt1 <- cbind(dat.macroinv_filt, Clim_mac1) #adicionando à matriz de análise
+plot(pca_result_mac$x, pca_result_mac$y)
 
 #Metaregression
 
-model_macroinv_redu_covars<- robu(yi ~ transition+Clim_mac,
+model_macroinv_redu_covars<- robu(yi ~ transition+Clim_mac1,
                                   data = dat.macroinv_filt1, 
                                   modelweights = "CORR", studynum = ID,  
                                   var.eff.size = vi , small = T)
 model_macroinv_redu_covars
+
+model_macroinv_redu_covars_land<- robu(yi ~ transition+Clim_mac1+Mean_land_use,
+                                  data = dat.macroinv_filt1, 
+                                  modelweights = "CORR", studynum = ID,  
+                                  var.eff.size = vi , small = T)
+model_macroinv_redu_covars_land
+
+
 #Safe-number
 fsn (yi=yi, vi=vi, data= dat.macroinv_filt1,type="Orwin")
 
 #Olthers
-write.table(dat.macroinv_filt1, file= (here("data","processed", "dados_plot.csv")),sep = ",", quote = TRUE)
+write.table(dat.macroinv_filt1, file= (here("output", "macroinv_filt.csv")),sep = ",", quote = TRUE,  row.names=F)
 
 ####FISHES####
 
@@ -82,20 +91,20 @@ dim(dat.fish)
 length(unique(dat.fish$ID)) #Number of studies
 dat.fish_filt <- dat.fish[dat.fish$transition!="openagr",]
 dim(dat.fish_filt)
-length(unique(dat.fish_filt$ID)) #We lost 1 study
+length(unique(dat.fish_filt$ID)) #We lost 3 studies
 
 #Testing colinearity of climate variables
 correl_climate_fish <- cor(dat.fish_filt[,c(24:27)])
 correl_climate_fish
-dat.fish <- dat.fish[, -25] # Excluding temperature sazonality (r= -0.86)
+dat.fish_filt <- dat.fish_filt[, -25] # Excluding temperature sazonality (r= -0.86)
 
 #Generating PCA axes
-dat.fish_frame <- as.data.frame(dat.fish_filt[,c(24:26, 29)]) #criando um dataframe com as var climáticas
+dat.fish_frame <- as.data.frame(dat.fish_filt[,c(24:26)]) #criando um dataframe com as var climáticas
 pca_result_fish <- prcomp(dat.fish_frame, scale=TRUE) #fazendo a PCA
 PCA1_fish<- as.data.frame(pca_result_fish$x) #Gerando uma matriz com os PC
 Clim_fish <- PCA1_fish[,1] #Gerando uma matriz apenas com o PCA1
 dat.fish_filt1 <- cbind(dat.fish_filt, Clim_fish) #adicionando à matriz de análise
-
+plot(pca_result_fish$x, pca_result_fish$y)
 #Metaregression
 
 model_fish_redu_covars<- robu(yi ~ transition+Clim_fish,
@@ -103,6 +112,13 @@ model_fish_redu_covars<- robu(yi ~ transition+Clim_fish,
                                   modelweights = "CORR", studynum = ID,  
                                   var.eff.size = vi , small = T)
 model_fish_redu_covars
+
+model_fish_redu_covars_use<- robu(yi ~ transition+Clim_fish+Mean_land_use,
+                              data = dat.fish_filt1, 
+                              modelweights = "CORR", studynum = ID,  
+                              var.eff.size = vi , small = T)
+model_fish_redu_covars_use
+
 
 #Safe-number
 fsn (yi=yi, vi=vi, data= dat.fish_filt1,type="Orwin")
@@ -183,8 +199,6 @@ ggsave (here("output", "metaanal.png"), width = 12, height = 5 )
 fit.macroinv <- rma (dat.macroinv, yi, vi)
 fit.fish <-  rma (dat.fish, yi, vi)
 
-
-
 png(here("output", "funnel.png"), res=300,width=3200,height=1300)
 par(mfrow=c(1,2))
 funnel(fit.macroinv)
@@ -194,8 +208,11 @@ text(-1.3, 0.02, "Fishes")
 
 dev.off()
 
+#Testing boxplot land use
+dat.fish_filt1
 
-
+?boxplot
+boxplot (dat.fish_filt1$ID)
 
 
 
