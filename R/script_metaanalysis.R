@@ -8,7 +8,7 @@ library(patchwork)
 
 ####Meta-analysis and Meta-regression 
 ####MACROINVERTEBRATES####
-data_macroinv <- read.table(here ("data","processed","macroinvertebrates.txt"), h=T) ##All data
+data_macroinv <- read.table(here ("data","processed","macroinvertebrates.txt"), h=T) ##Macroinvertebrate data
 colnames(data_macroinv)
 str(data_macroinv)
 
@@ -17,17 +17,8 @@ str(data_macroinv)
 dat.macroinv<- escalc(measure="ZCOR", ri=Effect_size, ni=N_sample, vtype = "LS",
                      data=data_macroinv, append=TRUE) #método para valores de correlação, porém, extraindo o valor de z de fischer, já que valor do r (vr = ((1-r^2)^2)/(n-1))
 
-
-##Calculating the cummulative effects of each study
-cum_effect <- robu(yi ~1,
-                   data = dat.macroinv, 
-                   modelweights = "CORR", #Jean: Use os pesos correlacionados ao inves dos hierarquicos
-                   studynum = ID,  
-                   var.eff.size = vi , small = T)
-cum_effect
-
-#Excluding relationships with small number
-dim(dat.macroinv)
+#Excluding relationships with small number 
+dim(dat.macroinv) #initial dimension 
 length(unique(dat.macroinv$ID)) #Number of studies
 dat.macroinv_filt <- dat.macroinv[dat.macroinv$Transition!="Openagr",]
 dat.macroinv_filt <- dat.macroinv_filt[dat.macroinv_filt$Transition!="Openurb",]
@@ -39,30 +30,32 @@ correl_climate_mac <- cor(dat.macroinv_filt[,c(6:9)])
 correl_climate_mac
 
 #Generating PCA axes
-dat.macroinv_frame <- as.data.frame(dat.macroinv_filt[,c(6:9)]) #criando um dataframe com as var climáticas
-pca_result_mac <- prcomp(dat.macroinv_frame, scale=TRUE) #fazendo a PCA
+dat.macroinv_frame <- as.data.frame(dat.macroinv_filt[,c(6:9)]) #climatic data to a data frame
+pca_result_mac <- prcomp(dat.macroinv_frame, scale=TRUE) #PCA with climatic data
 pca_result_mac
 plot(pca_result_mac$x, pca_result_mac$y)
-PCA1_mac<- as.data.frame(pca_result_mac$x) #Gerando uma matriz com os PC
-Clim_mac <- PCA1_mac[,1] #Gerando uma matriz apenas com o PCA1
-dat.macroinv_filt1 <- cbind(dat.macroinv_filt, Clim_mac) #adicionando à matriz de análise
+PCA1_mac<- as.data.frame(pca_result_mac$x) #PC1 data frame
+Clim_mac <- PCA1_mac[,1] #Climatic matrix
+dat.macroinv_filt1 <- cbind(dat.macroinv_filt, Clim_mac) #Climatic matrix added to macroinv matrix
 
 #Metaregression
 cor(dat.macroinv_filt1[,c(10:13,17)], use = "na.or.complete") #Range and position have >0.7
 colnames(dat.macroinv_filt1)
 
 model_macroinv_ecol<- robu(yi ~ Transition+Clim_mac+Topography+
-                                            Historic_land,
-                                            data = dat.macroinv_filt1, 
-                                            modelweights = "CORR", studynum = ID,  
-                                            var.eff.size = vi , small = T)
-model_macroinv_ecol
+                                Historic_land,
+                                data = dat.macroinv_filt1, 
+                                modelweights = "CORR", studynum = ID,  
+                                var.eff.size = vi , small = T)
+
+model_macroinv_ecol #Ecological predictors
 
 model_macroinv_method<- robu(yi ~ Range,
-                             data = dat.macroinv_filt1,
-                             modelweights = "CORR", studynum = ID,  
-                             var.eff.size = vi , small = T)
-model_macroinv_method
+                                  data = dat.macroinv_filt1,
+                                  modelweights = "CORR", studynum = ID,  
+                                  var.eff.size = vi , small = T)
+
+model_macroinv_method #Methodological predictor
 
 #Safe-number
 fsn (yi=yi, vi=vi, data= dat.macroinv_filt1,type="Orwin")
@@ -72,7 +65,7 @@ write.table(dat.macroinv_filt1, file= (here("output", "macroinv_filt.csv")),sep 
 
 ####FISHES####
 
-data_fish <- read.table(here ("data","processed","fishes.txt"), h=T) ##Charge data
+data_fish <- read.table(here ("data","processed","fishes.txt"), h=T) ##Macroinvertebrate data
 colnames(data_fish)
 str(data_fish)
 
@@ -81,17 +74,8 @@ str(data_fish)
 dat.fish<- escalc(measure="ZCOR", ri=Effect_size, ni=N_sample, vtype = "LS",
                       data=data_fish, append=TRUE) #método para valores de correlação, porém, extraindo o valor de z de fischer, já que valor do r (vr = ((1-r^2)^2)/(n-1))
 
-
-##Calculating the cummulative effects of each study
-cum_effect <- robu(yi ~1,
-                   data = dat.fish, 
-                   modelweights = "CORR", #Jean: Use os pesos correlacionados ao inves dos hierarquicos
-                   studynum = ID,  
-                   var.eff.size = vi , small = T)
-cum_effect
-
 #Excluding relationships with small number
-dim(dat.fish)
+dim(dat.fish) #initial dimension 
 length(unique(dat.fish$ID)) #Number of studies
 dat.fish_filt <- dat.fish[dat.fish$Transition!="openagr",]
 dim(dat.fish_filt)
@@ -100,42 +84,41 @@ length(unique(dat.fish_filt$ID)) #We lost 3 studies
 #Testing colinearity of climate variables
 correl_climate_fish <- cor(dat.fish_filt[,c(6:9)])
 correl_climate_fish
-dat.fish_filt <- dat.fish_filt[, -8] # Excluding temperature sazonality (r= -0.86)
-dat.fish_filt <- dat.fish_filt[, -7] # Excluding temperature sazonality (r= -0.86)
+dat.fish_filt <- dat.fish_filt[, -8] # Excluding temperature sazonality (r= -0.84 with mean_temp and r= -0.81 with precipitation)
+dat.fish_filt <- dat.fish_filt[, -7] # Excluding precipitation (r= -0.88 with mean_temp)
 colnames (dat.fish_filt)
 
 #Generating PCA axes
-dat.fish_frame <- as.data.frame(dat.fish_filt[,c(6:7)]) #criando um dataframe com as var climáticas
-pca_result_fish <- prcomp(dat.fish_frame, scale=TRUE) #fazendo a PCA
+dat.fish_frame <- as.data.frame(dat.fish_filt[,c(6:7)])  #climatic data to a data frame
+pca_result_fish <- prcomp(dat.fish_frame, scale=TRUE) #PCA with climatic data
 pca_result_fish
 plot(pca_result_fish$x, pca_result_fish$y)
-PCA1_fish<- as.data.frame(pca_result_fish$x) #Gerando uma matriz com os PC
-Clim_fish <- PCA1_fish[,1] #Gerando uma matriz apenas com o PCA1
-dat.fish_filt1 <- cbind(dat.fish_filt, Clim_fish) #adicionando à matriz de análise
-
+PCA1_fish<- as.data.frame(pca_result_fish$x) #PC1 data frame
+Clim_fish <- PCA1_fish[,1] #Climat data
+dat.fish_filt1 <- cbind(dat.fish_filt, Clim_fish) #Climatic matrix added to macroinv matrix
 
 #Metaregression
 cor(dat.fish_filt1[,c(8:11,15)], use = "na.or.complete") #Range and position have >0.7
 colnames(dat.macroinv_filt1)
 
 model_fish_ecol<- robu(yi ~ Transition+Clim_fish+
-                      Topography+Historic_land,
-                      data = dat.fish_filt1, 
-                      modelweights = "CORR", studynum = ID,  
-                      var.eff.size = vi , small = T)
+                            Topography+Historic_land,
+                            data = dat.fish_filt1, 
+                            modelweights = "CORR", studynum = ID,  
+                            var.eff.size = vi , small = T)
 
-model_fish_ecol
+model_fish_ecol #Ecological predictors
 
 
 model_fish_method<- robu(yi ~ Range,
-                         data = dat.fish_filt1,
-                         modelweights = "CORR", studynum = ID,
-                         var.eff.size = vi , small = T)
+                              data = dat.fish_filt1,
+                              modelweights = "CORR", studynum = ID,
+                              var.eff.size = vi , small = T)
 
-model_fish_method
+model_fish_method #Methodological predictors
 
 
-=#Safe-number
+#Safe-number
 fsn (yi=yi, vi=vi, data= dat.fish_filt1,type="Orwin")
 
 #Others
@@ -147,7 +130,7 @@ write.table(dat.fish_filt1, file= (here("output", "dados_plot_fish.csv")),sep = 
 plot_macroinv <- dat.macroinv_filt1
 plot_fish <- dat.fish_filt1
 
-vetor_macro <- c(0:82) #vetor para eixo X
+vetor_macro <- c(0:81) #vetor para eixo X
 vetor_fish <- c(0:41) #vetor para eixo X
 
 macro <- ggplot(plot_macroinv,aes(x=yi, y=vetor_macro, fill=Transition))+
