@@ -12,7 +12,7 @@ data_macroinv <- read.table(here ("data","processed","macroinvertebrates.txt"), 
 colnames(data_macroinv)
 str(data_macroinv)
 
-##Modelling de Hedge's H
+##Modelling de Hedge's H (Fischer Z)
 
 dat.macroinv<- escalc(measure="ZCOR", ri=Effect_size, ni=N_sample, vtype = "LS",
                      data=data_macroinv, append=TRUE) #método para valores de correlação, porém, extraindo o valor de z de fischer, já que valor do r (vr = ((1-r^2)^2)/(n-1))
@@ -26,24 +26,27 @@ dim(dat.macroinv_filt)
 length(unique(dat.macroinv_filt$ID)) #We lost 5 studies
 
 #Testing colinearity of climate variables
-correl_climate_mac <- cor(dat.macroinv_filt[,c(6:9)]) 
-correl_climate_mac
+colnames(data_macroinv)
+correl_climate_mac <- cor(dat.macroinv_filt[,c("Temp_media","Precipitacao","Temp_sazonal","Prec_sazonal")]) 
+as.dist(correl_climate_mac)
 
 #Generating PCA axes
-dat.macroinv_frame <- as.data.frame(dat.macroinv_filt[,c(6:9)]) #climatic data to a data frame
+dat.macroinv_frame <- as.data.frame(dat.macroinv_filt[,c("Temp_media","Precipitacao","Temp_sazonal","Prec_sazonal")]) #climatic data to a data frame
 pca_result_mac <- prcomp(dat.macroinv_frame, scale=TRUE) #PCA with climatic data
 pca_result_mac
-plot(pca_result_mac$x, pca_result_mac$y)
-PCA1_mac<- as.data.frame(pca_result_mac$x) #PC1 data frame
-Clim_mac <- PCA1_mac[,1] #Climatic matrix
+plot(pca_result_mac$x[,"PC1"], pca_result_mac$x[,"PC2"])
+text(pca_result_mac$x[,"PC1"], pca_result_mac$x[,"PC2"], dat.macroinv_filt[,"ID"])
+
+PCA1_mac<- as.data.frame(pca_result_mac$x[,c("PC1", "PC2")]) #PC1 data frame
+Clim_mac <- PCA1_mac #Climatic matrix
 dat.macroinv_filt1 <- cbind(dat.macroinv_filt, Clim_mac) #Climatic matrix added to macroinv matrix
 
 #Metaregression
-cor(dat.macroinv_filt1[,c(10:13,17)], use = "na.or.complete") #Range and position have >0.7
 colnames(dat.macroinv_filt1)
+as.dist(cor(dat.macroinv_filt1[,c("Range", "Position", "Historic_land", "Topography", "PC1", "PC2")], use = "na.or.complete")) #Range and position have >0.7
 
-model_macroinv_ecol<- robu(yi ~ Transition+Clim_mac+Topography+
-                                Historic_land,
+model_macroinv_ecol<- robu(yi ~ Transition+Topography+
+                                Historic_land+PC1+PC2,
                                 data = dat.macroinv_filt1, 
                                 modelweights = "CORR", studynum = ID,  
                                 var.eff.size = vi , small = T)
@@ -57,6 +60,8 @@ model_macroinv_method<- robu(yi ~ Range,
 
 model_macroinv_method #Methodological predictor
 
+plot (yi ~ Range, data = dat.macroinv_filt1)
+
 #Safe-number
 fsn (yi=yi, vi=vi, data= dat.macroinv_filt1,type="Orwin")
 
@@ -69,7 +74,7 @@ data_fish <- read.table(here ("data","processed","fishes.txt"), h=T) ##Macroinve
 colnames(data_fish)
 str(data_fish)
 
-##Modelling de Hedge's H
+##Modelling de Hedge's H (Fisher's z)
 
 dat.fish<- escalc(measure="ZCOR", ri=Effect_size, ni=N_sample, vtype = "LS",
                       data=data_fish, append=TRUE) #método para valores de correlação, porém, extraindo o valor de z de fischer, já que valor do r (vr = ((1-r^2)^2)/(n-1))
@@ -77,71 +82,75 @@ dat.fish<- escalc(measure="ZCOR", ri=Effect_size, ni=N_sample, vtype = "LS",
 #Excluding relationships with small number
 dim(dat.fish) #initial dimension 
 length(unique(dat.fish$ID)) #Number of studies
-dat.fish_filt <- dat.fish[dat.fish$Transition!="openagr",]
+dat.fish_filt <- dat.fish[dat.fish$Transition!="Openagr",]
 dim(dat.fish_filt)
 length(unique(dat.fish_filt$ID)) #We lost 3 studies
 
 #Testing colinearity of climate variables
-correl_climate_fish <- cor(dat.fish_filt[,c(6:9)])
-correl_climate_fish
-dat.fish_filt <- dat.fish_filt[, -8] # Excluding temperature sazonality (r= -0.84 with mean_temp and r= -0.81 with precipitation)
-dat.fish_filt <- dat.fish_filt[, -7] # Excluding precipitation (r= -0.88 with mean_temp)
-colnames (dat.fish_filt)
+colnames(data_fish)
+correl_climate_fish <- cor(dat.fish_filt[,c("Temp_media","Precipitacao","Temp_sazonal","Prec_sazonal")]) 
+as.dist(correl_climate_fish) # Precipitacao and Temp_sazonal will be excluded from the analisys
+dat.fish_filt <- subset(dat.fish_filt, select = -c(Precipitacao,Temp_sazonal))
+colnames(dat.fish_filt)
 
 #Generating PCA axes
-dat.fish_frame <- as.data.frame(dat.fish_filt[,c(6:7)])  #climatic data to a data frame
-pca_result_fish <- prcomp(dat.fish_frame, scale=TRUE) #PCA with climatic data
-pca_result_fish
-plot(pca_result_fish$x, pca_result_fish$y)
-PCA1_fish<- as.data.frame(pca_result_fish$x) #PC1 data frame
-Clim_fish <- PCA1_fish[,1] #Climat data
-dat.fish_filt1 <- cbind(dat.fish_filt, Clim_fish) #Climatic matrix added to macroinv matrix
+
+#dat.fish_frame <- as.data.frame(dat.fish_filt[,c("Temp_media","Precipitacao","Temp_sazonal","Prec_sazonal")]) #climatic data to a data frame
+#pca_result_fish <- prcomp(dat.fish_frame, scale=TRUE) #PCA with climatic data
+#pca_result_mac
+#plot(pca_result_fish$x[,"PC1"], pca_result_fish$x[,"PC2"])
+#text(pca_result_fish$x[,"PC1"], pca_result_fish$x[,"PC2"], dat.fish_filt[,"ID"])
+#PCA1_fish<- as.data.frame(pca_result_fish$x[,c("PC1", "PC2")]) #PC1 data frame
+#Clim_fish <- PCA1_fish #Climatic matrix
+#dat.fish_filt1 <- cbind(dat.fish_filt, Clim_fish) #Climatic matrix added to macroinv matrix
 
 #Metaregression
-cor(dat.fish_filt1[,c(8:11,15)], use = "na.or.complete") #Range and position have >0.7
-colnames(dat.macroinv_filt1)
+colnames(dat.fish_filt)
+as.dist(cor(dat.macroinv_filt[,c("Range", "Position", "Historic_land", 
+                                 "Topography", "Temp_media", "Prec_sazonal")], use = "na.or.complete")) #Range and position have >0.7
 
-model_fish_ecol<- robu(yi ~ Transition+Clim_fish+
-                            Topography+Historic_land,
-                            data = dat.fish_filt1, 
+
+model_fish_ecol<- robu(yi ~ Transition+ Topography+Historic_land+
+                            Temp_media+Prec_sazonal,     
+                            data = dat.fish_filt, 
                             modelweights = "CORR", studynum = ID,  
                             var.eff.size = vi , small = T)
 
 model_fish_ecol #Ecological predictors
 
-
 model_fish_method<- robu(yi ~ Range,
-                              data = dat.fish_filt1,
+                              data = dat.fish_filt,
                               modelweights = "CORR", studynum = ID,
                               var.eff.size = vi , small = T)
 
 model_fish_method #Methodological predictors
 
+plot (yi ~ Range, data = dat.fish_filt)
 
 #Safe-number
-fsn (yi=yi, vi=vi, data= dat.fish_filt1,type="Orwin")
+fsn (yi=yi, vi=vi, data= dat.fish_filt,type="Orwin")
 
 #Others
-write.table(dat.fish_filt1, file= (here("output", "dados_plot_fish.csv")),sep = ",", quote = TRUE)
+write.table(dat.fish_filt, file= (here("output", "dados_plot_fish.csv")),sep = ",", quote = TRUE)
 
 #####PLOTS####
 ###Effect Size
 
 plot_macroinv <- dat.macroinv_filt1
-plot_fish <- dat.fish_filt1
+plot_fish <- dat.fish_filt
 
-vetor_macro <- c(0:81) #vetor para eixo X
-vetor_fish <- c(0:41) #vetor para eixo X
+vetor_macro <- c(0:80) #vetor para eixo X
+vetor_fish <- c(0:35) #vetor para eixo X
 
 macro <- ggplot(plot_macroinv,aes(x=yi, y=vetor_macro, fill=Transition))+
   theme_bw()+
   geom_point(size=4, shape = 21,colour="black",alpha=0.8)+
   geom_vline(xintercept = 0,alpha = 0.8)+
-  geom_vline(xintercept = 0.46, alpha = 0.8, colour = "#ff0000", linetype = "dashed")+
-  geom_vline(xintercept = 0.10, alpha = 0.8, colour = "#333333", linetype = "dashed")+
+  geom_vline(xintercept = -0.47, alpha = 0.8, colour = "#ff0000", linetype = "dashed")+
+  geom_vline(xintercept = -0.61, alpha = 0.8, colour = "#333333", linetype = "dashed")+
   geom_point(size=4, shape = 21,colour="black",alpha=0.8)+
   ylab("Relations Ordered by Effect Size")+
-  xlab("Effect Size (Hedges' g)")+
+  xlab("Effect Size (Fisher's z)")+
   xlim(-1.5,1.0)+
   coord_flip()+
   annotate("text",x=0.94,y=10,label="Macroinvertebrates",family="Noto Sans",size=4.5,fontface="bold")+
@@ -163,11 +172,11 @@ fish <- ggplot(plot_fish,aes(x=yi, y=vetor_fish, fill=Transition))+
   theme_bw()+
   geom_point(size=4, shape = 21,colour="black",alpha=0.8)+
   geom_vline(xintercept = 0,alpha = 0.8)+
-  geom_vline(xintercept = -0.06, alpha = 0.8, colour = "#ff0000", linetype = "dashed")+
-  geom_vline(xintercept = -0.36, alpha = 0.8, colour = "#333333", linetype = "dashed")+
+  #geom_vline(xintercept = 0.43, alpha = 0.8, colour = "#ff0000", linetype = "dashed")+
+  #geom_vline(xintercept = 0.25, alpha = 0.8, colour = "#333333", linetype = "dashed")+
   geom_point(size=4, shape = 21,colour="black",alpha=0.8)+
   ylab("Relations Ordered by Effect Size")+
-  xlab("Effect Size (Hedges' g)")+
+  xlab("Effect Size (Fisher's z)")+
   xlim(-1.5,1.0)+
   coord_flip()+
   annotate("text",x=0.94,y=1,label="Fishes",family="Noto Sans",size=4.5,fontface="bold")+
@@ -198,10 +207,9 @@ fit.fish <-  rma (dat.fish, yi, vi)
 png(here("output", "funnel.png"), res=300,width=3200,height=1300)
 par(mfrow=c(1,2))
 funnel(fit.macroinv)
-text(-1.15, 0.02, "Macroinvertebrates")
+text(-1.3, 0.02, "Macroinvertebrates")
 funnel(fit.fish)
 text(-1.3, 0.02, "Fishes")
-
 dev.off()
 
 
