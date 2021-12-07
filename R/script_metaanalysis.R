@@ -6,6 +6,7 @@ library (vegan)
 library(tidyverse)
 library(patchwork)
 
+
 ####Meta-analysis and Meta-regression 
 ####MACROINVERTEBRATES####
 data_macroinv <- read.table(here ("data","processed","macroinvertebrates.txt"), h=T) ##Macroinvertebrate data
@@ -43,15 +44,23 @@ dat.macroinv_filt1 <- cbind(dat.macroinv_filt, Clim_mac) #Climatic matrix added 
 
 #Metaregression
 colnames(dat.macroinv_filt1)
-as.dist(cor(dat.macroinv_filt1[,c("Range", "Position", "Historic_land", "Topography", "PC1", "PC2")], use = "na.or.complete")) #Range and position have >0.7
+round(as.dist(cor(dat.macroinv_filt1[,c("Range", "Position", "Historic_land", "Topography", "PC1", "PC2")], use = "na.or.complete")),3) #Range and position have >0.7
 
-model_macroinv_ecol<- robu(yi ~ Transition+Topography+
-                                Historic_land+PC1+PC2,
+model_macroinv_ecol<- robu(yi ~ Transition+Historic_land+
+                                Topography+PC1+PC2,
                                 data = dat.macroinv_filt1, 
                                 modelweights = "CORR", studynum = ID,  
                                 var.eff.size = vi , small = T)
 
-model_macroinv_ecol #Ecological predictors
+model_macroinv_ecol
+
+boxplot(dat.macroinv_filt1$yi~dat.macroinv_filt1$Transition)
+plot(dat.macroinv_filt1$yi~dat.macroinv_filt1$Topography)
+plot(dat.macroinv_filt1$yi~dat.macroinv_filt1$Historic_land)
+plot(dat.macroinv_filt1$yi~dat.macroinv_filt1$PC1)
+plot(dat.macroinv_filt1$yi~dat.macroinv_filt1$PC2)
+
+#Ecological predictors
 
 model_macroinv_method<- robu(yi ~ Range,
                                   data = dat.macroinv_filt1,
@@ -63,9 +72,12 @@ model_macroinv_method #Methodological predictor
 plot (yi ~ Range, data = dat.macroinv_filt1)
 
 #Safe-number
-fsn (yi=yi, vi=vi, data= dat.macroinv_filt1,type="Orwin")
+mean_yi_macro <- as.numeric(unlist(by(dat.macroinv_filt1$yi,INDICES = dat.macroinv_filt1$ID,FUN = mean)))
+mean_vi_macro <- as.numeric(unlist(by(dat.macroinv_filt1$vi,INDICES = dat.macroinv_filt1$ID,FUN = mean)))
 
-#Olthers
+fsn (yi=mean_yi_macro, vi=mean_vi_macro,type="Orwin")
+
+#Others
 write.table(dat.macroinv_filt1, file= (here("output", "macroinv_filt.csv")),sep = ",", quote = TRUE,  row.names=F)
 
 ####FISHES####
@@ -90,8 +102,8 @@ length(unique(dat.fish_filt$ID)) #We lost 3 studies
 colnames(data_fish)
 correl_climate_fish <- cor(dat.fish_filt[,c("Temp_media","Precipitacao","Temp_sazonal","Prec_sazonal")]) 
 as.dist(correl_climate_fish) # Precipitacao and Temp_sazonal will be excluded from the analisys
-dat.fish_filt <- subset(dat.fish_filt, select = -c(Precipitacao,Temp_sazonal))
-colnames(dat.fish_filt)
+dat.fish_filt1 <- subset(dat.fish_filt, select = -c(Precipitacao,Temp_sazonal))
+colnames(dat.fish_filt1)
 
 #Generating PCA axes
 
@@ -105,18 +117,23 @@ colnames(dat.fish_filt)
 #dat.fish_filt1 <- cbind(dat.fish_filt, Clim_fish) #Climatic matrix added to macroinv matrix
 
 #Metaregression
-colnames(dat.fish_filt)
+colnames(dat.fish_filt1)
 as.dist(cor(dat.macroinv_filt[,c("Range", "Position", "Historic_land", 
                                  "Topography", "Temp_media", "Prec_sazonal")], use = "na.or.complete")) #Range and position have >0.7
 
-
-model_fish_ecol<- robu(yi ~ Transition+ Topography+Historic_land+
+model_fish_ecol<- robu(yi ~ Transition+Historic_land+Topography+
                             Temp_media+Prec_sazonal,     
-                            data = dat.fish_filt, 
+                            data = dat.fish_filt1, 
                             modelweights = "CORR", studynum = ID,  
                             var.eff.size = vi , small = T)
 
-model_fish_ecol #Ecological predictors
+model_fish_ecol 
+
+boxplot(dat.fish_filt1$yi~dat.fish_filt1$Transition)
+plot(dat.fish_filt1$yi~dat.fish_filt1$Topography)
+plot(dat.fish_filt1$yi~dat.fish_filt1$Historic_land)
+plot(dat.fish_filt1$yi~dat.fish_filt1$Temp_media)
+plot(dat.fish_filt1$yi~dat.fish_filt1$Prec_sazonal)
 
 model_fish_method<- robu(yi ~ Range,
                               data = dat.fish_filt,
@@ -125,80 +142,91 @@ model_fish_method<- robu(yi ~ Range,
 
 model_fish_method #Methodological predictors
 
-plot (yi ~ Range, data = dat.fish_filt)
+plot(dat.fish_filt1$yi~dat.fish_filt1$Range)
 
 #Safe-number
-fsn (yi=yi, vi=vi, data= dat.fish_filt,type="Orwin")
+mean_yi_fish <- as.numeric(unlist(by(dat.fish_filt$yi,INDICES = dat.fish_filt$ID,FUN = mean)))
+mean_vi_fish <- as.numeric(unlist(by(dat.fish_filt$vi,INDICES = dat.fish_filt$ID,FUN = mean)))
+
+fsn (yi=mean_yi_fish, vi=mean_vi_fish,type="Orwin")
 
 #Others
 write.table(dat.fish_filt, file= (here("output", "dados_plot_fish.csv")),sep = ",", quote = TRUE)
 
 #####PLOTS####
-###Effect Size
+###Effect Size Transition
+data_macroinv_filt1 <- as_tibble(dat.macroinv_filt1)
 
-plot_macroinv <- dat.macroinv_filt1
-plot_fish <- dat.fish_filt
+theme_set(theme_minimal(base_size = 15, base_family = "Arial"))
 
-vetor_macro <- c(0:80) #vetor para eixo X
-vetor_fish <- c(0:35) #vetor para eixo X
+theme_update(
+  panel.grid.major = element_line(color = "grey92", size = .4),
+  panel.grid.minor = element_blank(),
+  axis.title.x = element_text(color = "black", margin = margin(t = 7)),
+  axis.title.y = element_text(color = "black", margin = margin(r = 7)),
+  axis.text = element_text(color = "black"),
+  axis.ticks =  element_line(color = "grey92", size = .4),
+  axis.ticks.length = unit(.6, "lines"),
+  legend.position = "top",
+  plot.subtitle = element_text(hjust = 0.5, face = "bold", color = "black",
+                               family = "Arial", 
+                               size = 13, margin = margin(0, 0, 10, 0)),
+  plot.margin = margin(rep(20, 4)),
+  axis.line = element_line(colour="black")
+)
 
-macro <- ggplot(plot_macroinv,aes(x=yi, y=vetor_macro, fill=Transition))+
-  theme_bw()+
-  geom_point(size=4, shape = 21,colour="black",alpha=0.8)+
-  geom_vline(xintercept = 0,alpha = 0.8)+
-  geom_vline(xintercept = -0.47, alpha = 0.8, colour = "#ff0000", linetype = "dashed")+
-  geom_vline(xintercept = -0.61, alpha = 0.8, colour = "#333333", linetype = "dashed")+
-  geom_point(size=4, shape = 21,colour="black",alpha=0.8)+
-  ylab("Relations Ordered by Effect Size")+
-  xlab("Effect Size (Fisher's z)")+
-  xlim(-1.5,1.0)+
-  coord_flip()+
-  annotate("text",x=0.94,y=10,label="Macroinvertebrates",family="Noto Sans",size=4.5,fontface="bold")+
-  scale_fill_manual(name = "Transition Category",
-                    values = c("#ff0000","#333333"),
-                    labels = c("Forest to Agriculture","Forest to Urban"))+
-  theme(axis.title.y = element_text(colour = "black",size=12,
-                                    face="bold",family="Noto Sans"))+
-  theme(axis.text.y = element_text(angle=90,size=9,
-                                   hjust=0.2,family="Noto Sans"))+
-  theme(axis.title.x = element_text(colour = "black",size=12,
-                                    face="bold",family="Noto Sans"))+
-  theme(axis.text.x = element_text(hjust=0.2,size=9,family="Noto Sans"))+
-  theme(legend.position = "bottom")+
-  theme(legend.text = element_text(size=11,family="Noto Sans"))+
-  theme(legend.title = element_text(size=12,family="Noto Sans", face="bold"))
+macro_plot <-ggplot(data_macroinv_filt1,aes(x=Transition, y=yi, size = vi))+
+  geom_point(shape =21, alpha =.7,
+             color = "black", fill = "grey40",
+             position = position_jitter(w=.25, seed =1))+
+  ylim(-1.6,1.2)+
+  scale_size(range = c(7.3,2.5), guide = F)+
+  labs(y = "Effect Size (Fisher's Z)", x = "\nTransition categories",
+       subtitle = "Macroinvertebrates")+
+  scale_x_discrete(labels =c("Forest to Agriculture", "Forest to Urban"))+
+  geom_hline(yintercept = 0,alpha = 0.8, linetype = "dashed", colour = "grey50")+
+  annotate("rect",xmin = 0.71, xmax = 1.30, ymin = -0.97673, ymax= 0.02836, 
+           fill = "grey45", alpha = 0.2)+
+  annotate("rect",xmin = 1.74, xmax = 2.27, ymin = -1.04027, ymax = -0.17982,
+           fill = "grey45", alpha = 0.2)+
+  annotate("segment",x = 0.71, y = -0.47, xend = 1.30,  yend = -0.47, size = 1)+
+  annotate("segment",x = 1.74, y = -0.61, xend = 2.27, yend = -0.61, size = 1)
 
-fish <- ggplot(plot_fish,aes(x=yi, y=vetor_fish, fill=Transition))+
-  theme_bw()+
-  geom_point(size=4, shape = 21,colour="black",alpha=0.8)+
-  geom_vline(xintercept = 0,alpha = 0.8)+
-  #geom_vline(xintercept = 0.43, alpha = 0.8, colour = "#ff0000", linetype = "dashed")+
-  #geom_vline(xintercept = 0.25, alpha = 0.8, colour = "#333333", linetype = "dashed")+
-  geom_point(size=4, shape = 21,colour="black",alpha=0.8)+
-  ylab("Relations Ordered by Effect Size")+
-  xlab("Effect Size (Fisher's z)")+
-  xlim(-1.5,1.0)+
-  coord_flip()+
-  annotate("text",x=0.94,y=1,label="Fishes",family="Noto Sans",size=4.5,fontface="bold")+
-  scale_fill_manual(name = "Transition Category",
-                    values = c("#ff0000","#333333"),
-                    labels = c("Forest to Agriculture","Forest to Urban"))+
-  theme(axis.title.y = element_text(colour = "black",size=12,
-                                    face="bold",family="Noto Sans"))+
-  theme(axis.text.y = element_text(angle=90,size=9,
-                                   hjust=0.2,family="Noto Sans"))+
-  theme(axis.title.x = element_text(colour = "black",size=12,
-                                    face="bold",family="Noto Sans"))+
-  theme(axis.text.x = element_text(hjust=0.2,size=9,family="Noto Sans"))+
-  theme(legend.position = "bottom")+
-  theme(legend.text = element_text(size=11,family="Noto Sans"))+
-  theme(legend.title = element_text(size=12,family="Noto Sans", face="bold"))
 
-(macro|fish)+ 
-  patchwork::plot_layout(guides="collect") & ggplot2::theme(legend.position = "bottom")
+fish_plot <- ggplot(dat.fish_filt1,aes(x=Transition, y=yi, size = vi))+
+  geom_point(shape =21, alpha =.7,
+             color = "black", fill = "grey40",
+             position = position_jitter(w=.25, seed =2))+
+  ylim(-1.6,1.2)+
+  scale_size(range = c(7.3,2.5), guide = F)+
+  labs(x = "\nTransition categories",subtitle = "Fishes")+
+  scale_x_discrete(labels =c("Forest to Agriculture", "Forest to Urban"))+
+  geom_hline(yintercept = 0,alpha = 0.8, linetype = "dashed", colour = "grey50")+
+  theme(axis.line.y = element_blank(),
+        axis.title.y = element_blank(),
+        axis.text.y= element_blank())
 
-#Exporting plot
-ggsave (here("output", "metaanal.png"), width = 12, height = 5)
+
+p <- macro_plot + fish_plot
+
+
+gridExtra::grid.arrange(egg::set_panel_size(p=p,
+                                            width=unit(10, "in"), height=unit(7, "cm")))
+ggsave (here("output", "Fig3.png"), width = 10, height = 7, dpi =600)
+
+#Range plot
+dat.macroinv_filt1
+
+relacao_plot <- ggplot(data_macroinv_filt1,aes(x=Range, y=yi, size = vi))+
+  geom_smooth(method = "lm", color = "black")+
+  geom_point(shape =21, alpha =.7,
+             color = "black", fill = "grey40",
+             position = position_jitter(w=.25, seed =3))+
+  scale_size(range = c(7.3,2.5), guide = F)+
+  labs(y = "Effect Size (Fisher's Z)", x = "\nRange (%)")
+
+
+ggsave (here("output", "fig4.png"), width = 8, height = 7, dpi = 600)
 
 ###Funnel plot
 fit.macroinv <- rma (dat.macroinv, yi, vi)
