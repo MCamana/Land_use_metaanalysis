@@ -1,6 +1,6 @@
 #####Charge packages#####
-library (metafor)
 library(here)
+library (metafor)
 library (robumeta)
 library (vegan)
 library(tidyverse)
@@ -44,10 +44,10 @@ dat.macroinv_filt1 <- cbind(dat.macroinv_filt, Clim_mac) #Climatic matrix added 
 
 #Metaregression
 colnames(dat.macroinv_filt1)
-round(as.dist(cor(dat.macroinv_filt1[,c("Range", "Position", "Historic_land", "Topography", "PC1", "PC2")], use = "na.or.complete")),3) #Range and position have >0.7
+round(as.dist(cor(dat.macroinv_filt1[,c("Range", "Position", "LUI","ADR", "Topography", "PC1", "PC2")], use = "na.or.complete")),3) #Range and position have >0.7
 
-model_macroinv_ecol<- robu(yi ~ Transition+Historic_land+
-                                Topography+PC1+PC2,
+model_macroinv_ecol<- robu(yi ~ Transition+LUI+
+                                PC1+PC2-1,
                                 data = dat.macroinv_filt1, 
                                 modelweights = "CORR", studynum = ID,  
                                 var.eff.size = vi , small = T)
@@ -56,7 +56,8 @@ model_macroinv_ecol
 
 boxplot(dat.macroinv_filt1$yi~dat.macroinv_filt1$Transition)
 plot(dat.macroinv_filt1$yi~dat.macroinv_filt1$Topography)
-plot(dat.macroinv_filt1$yi~dat.macroinv_filt1$Historic_land)
+plot(dat.macroinv_filt1$yi~dat.macroinv_filt1$LUI)
+plot(dat.macroinv_filt1$yi~dat.macroinv_filt1$ADR)
 plot(dat.macroinv_filt1$yi~dat.macroinv_filt1$PC1)
 plot(dat.macroinv_filt1$yi~dat.macroinv_filt1$PC2)
 
@@ -95,6 +96,7 @@ dat.fish<- escalc(measure="ZCOR", ri=Effect_size, ni=N_sample, vtype = "LS",
 dim(dat.fish) #initial dimension 
 length(unique(dat.fish$ID)) #Number of studies
 dat.fish_filt <- dat.fish[dat.fish$Transition!="Openagr",]
+dat.fish_filt <- dat.fish_filt[dat.fish_filt$Transition!="Openurb",]
 dim(dat.fish_filt)
 length(unique(dat.fish_filt$ID)) #We lost 3 studies
 
@@ -107,22 +109,22 @@ colnames(dat.fish_filt1)
 
 #Generating PCA axes
 
-#dat.fish_frame <- as.data.frame(dat.fish_filt[,c("Temp_media","Precipitacao","Temp_sazonal","Prec_sazonal")]) #climatic data to a data frame
-#pca_result_fish <- prcomp(dat.fish_frame, scale=TRUE) #PCA with climatic data
-#pca_result_mac
-#plot(pca_result_fish$x[,"PC1"], pca_result_fish$x[,"PC2"])
-#text(pca_result_fish$x[,"PC1"], pca_result_fish$x[,"PC2"], dat.fish_filt[,"ID"])
-#PCA1_fish<- as.data.frame(pca_result_fish$x[,c("PC1", "PC2")]) #PC1 data frame
-#Clim_fish <- PCA1_fish #Climatic matrix
-#dat.fish_filt1 <- cbind(dat.fish_filt, Clim_fish) #Climatic matrix added to macroinv matrix
+dat.fish_frame <- as.data.frame(dat.fish_filt[,c("Temp_media","Precipitacao","Temp_sazonal","Prec_sazonal")]) #climatic data to a data frame
+pca_result_fish <- prcomp(dat.fish_frame, scale=TRUE) #PCA with climatic data
+pca_result_mac
+plot(pca_result_fish$x[,"PC1"], pca_result_fish$x[,"PC2"])
+text(pca_result_fish$x[,"PC1"], pca_result_fish$x[,"PC2"], dat.fish_filt[,"ID"])
+PCA1_fish<- as.data.frame(pca_result_fish$x[,c("PC1", "PC2")]) #PC1 data frame
+Clim_fish <- PCA1_fish #Climatic matrix
+dat.fish_filt1 <- cbind(dat.fish_filt, Clim_fish) #Climatic matrix added to macroinv matrix
 
 #Metaregression
 colnames(dat.fish_filt1)
-as.dist(cor(dat.macroinv_filt[,c("Range", "Position", "Historic_land", 
-                                 "Topography", "Temp_media", "Prec_sazonal")], use = "na.or.complete")) #Range and position have >0.7
+round(as.dist(cor(dat.fish_filt1[,c("Range", "Position", "LUI","ADR", "Topography", 
+                                        "PC1", "PC2")], use = "na.or.complete")),3) #Range and position have >0.7
 
-model_fish_ecol<- robu(yi ~ Transition+Historic_land+Topography+
-                            Temp_media+Prec_sazonal,     
+model_fish_ecol<- robu(yi ~ Transition+LUI+
+                            PC1+PC2-1,     
                             data = dat.fish_filt1, 
                             modelweights = "CORR", studynum = ID,  
                             var.eff.size = vi , small = T)
@@ -179,29 +181,35 @@ macro_plot <-ggplot(data_macroinv_filt1,aes(x=Transition, y=yi, size = vi))+
   geom_point(shape =21, alpha =.7,
              color = "black", fill = "grey40",
              position = position_jitter(w=.25, seed =1))+
-  ylim(-1.6,1.2)+
+  ylim(-1.6,1.3)+
   scale_size(range = c(7.3,2.5), guide = F)+
   labs(y = "Effect Size (Fisher's Z)", x = "\nTransition categories",
        subtitle = "Macroinvertebrates")+
   scale_x_discrete(labels =c("Forest to Agriculture", "Forest to Urban"))+
   geom_hline(yintercept = 0,alpha = 0.8, linetype = "dashed", colour = "grey50")+
-  annotate("rect",xmin = 0.71, xmax = 1.30, ymin = -0.97673, ymax= 0.02836, 
+  annotate("rect",xmin = 0.71, xmax = 1.30, ymin = -0.807, ymax= -0.0516, 
            fill = "grey45", alpha = 0.2)+
-  annotate("rect",xmin = 1.74, xmax = 2.27, ymin = -1.04027, ymax = -0.17982,
+  annotate("rect",xmin = 1.74, xmax = 2.27, ymin = -0.891, ymax = -0.0784,
            fill = "grey45", alpha = 0.2)+
-  annotate("segment",x = 0.71, y = -0.47, xend = 1.30,  yend = -0.47, size = 1)+
-  annotate("segment",x = 1.74, y = -0.61, xend = 2.27, yend = -0.61, size = 1)
+  annotate("segment",x = 0.71, y = -0.4295, xend = 1.30,  yend = -0.4295, size = 1)+
+  annotate("segment",x = 1.74, y = -0.4848, xend = 2.27, yend = -0.4848, size = 1)
 
 
 fish_plot <- ggplot(dat.fish_filt1,aes(x=Transition, y=yi, size = vi))+
   geom_point(shape =21, alpha =.7,
              color = "black", fill = "grey40",
              position = position_jitter(w=.25, seed =2))+
-  ylim(-1.6,1.2)+
+  ylim(-1.6,1.3)+
   scale_size(range = c(7.3,2.5), guide = F)+
   labs(x = "\nTransition categories",subtitle = "Fishes")+
   scale_x_discrete(labels =c("Forest to Agriculture", "Forest to Urban"))+
   geom_hline(yintercept = 0,alpha = 0.8, linetype = "dashed", colour = "grey50")+
+  annotate("rect",xmin = 0.71, xmax = 1.30, ymin = -1.385, ymax= 0.195, 
+           fill = "grey45", alpha = 0.2)+
+  annotate("rect",xmin = 1.70, xmax = 2.27, ymin = -1.5, ymax = 0.447,
+           fill = "grey45", alpha = 0.2)+
+  annotate("segment",x = 0.71, y = -0.595, xend = 1.30,  yend = -0.595, size = 1)+
+  annotate("segment",x = 1.70, y = -0.577, xend = 2.27, yend = -0.577, size = 1)+
   theme(axis.line.y = element_blank(),
         axis.title.y = element_blank(),
         axis.text.y= element_blank())
@@ -212,6 +220,7 @@ p <- macro_plot + fish_plot
 
 gridExtra::grid.arrange(egg::set_panel_size(p=p,
                                             width=unit(10, "in"), height=unit(7, "cm")))
+
 ggsave (here("output", "Fig3.png"), width = 10, height = 7, dpi =600)
 
 #Range plot
