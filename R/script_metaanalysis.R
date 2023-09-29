@@ -32,27 +32,111 @@ colnames(data_macroinv)
 correl_climate_mac <- cor(dat.macroinv_filt[,c("Temp_media","Precipitacao","Temp_sazonal","Prec_sazonal")]) 
 as.dist(correl_climate_mac)
 
+##Now, we will make 4 metaregressions, one for each spatial scale
+#25km buffer
+
 #Generating PCA axes
-dat.macroinv_frame <- as.data.frame(dat.macroinv_filt[,c("Temp_media","Precipitacao","Temp_sazonal","Prec_sazonal")]) #climatic data to a data frame
+colnames(data_macroinv)
+dat.macroinv_frame <- as.data.frame(dat.macroinv_filt[,c("Temp_media_25","Precipitacao_25","Temp_sazonal_25","Prec_sazonal_25")]) #climatic data to a data frame
 pca_result_mac <- prcomp(dat.macroinv_frame, scale=TRUE) #PCA with climatic data
 pca_result_mac
 plot(pca_result_mac$x[,"PC1"], pca_result_mac$x[,"PC2"])
 text(pca_result_mac$x[,"PC1"], pca_result_mac$x[,"PC2"], dat.macroinv_filt[,"ID"])
 
-PCA1_mac<- as.data.frame(pca_result_mac$x[,c("PC1", "PC2")]) #PC1 data frame
-Clim_mac <- PCA1_mac #Climatic matrix
-dat.macroinv_filt1 <- cbind(dat.macroinv_filt, Clim_mac) #Climatic matrix added to macroinv matrix
+PCA1_mac_25<- as.data.frame(pca_result_mac$x[,c("PC1", "PC2")]) #PC1 data frame
+Clim_mac_25 <- PCA1_mac_25 #Climatic matrix
+dat.macroinv_filt_25 <- cbind(dat.macroinv_filt, Clim_mac_25) #Climatic matrix added to macroinv matrix
 
 #Metaregression
-colnames(dat.macroinv_filt1)
-round(as.dist(cor(dat.macroinv_filt1[,c("Range", "Position", "LUI","ADR", "Topography", "PC1", "PC2")], use = "na.or.complete")),3) #Range and position have >0.7
+colnames(dat.macroinv_filt_25)
+round(as.dist(cor(dat.macroinv_filt1[,c("Range", "Position", "LUI_25", "Topography", "PC1", "PC2")], use = "na.or.complete")),3) #Range and position have >0.7
 
-model_macroinv<- robu(yi ~ Transition+LUI+PC1+PC2+Range,
+model_macroinv_25<- robu(yi ~ Transition+LUI_25+PC1+PC2+Range,
                                 data = dat.macroinv_filt1, 
                                 modelweights = "CORR", studynum = ID,  
                                 var.eff.size = vi , small = T)
 
-model_macroinv
+model_macroinv_25
+
+#50k buffer
+
+#Generating PCA axes
+colnames(data_macroinv)
+dat.macroinv_frame <- as.data.frame(dat.macroinv_filt[,c("Temp_media_50","Precipitacao_50","Temp_sazonal_50","Prec_sazonal_50")]) #climatic data to a data frame
+pca_result_mac <- prcomp(dat.macroinv_frame, scale=TRUE) #PCA with climatic data
+pca_result_mac
+plot(pca_result_mac$x[,"PC1"], pca_result_mac$x[,"PC2"])
+text(pca_result_mac$x[,"PC1"], pca_result_mac$x[,"PC2"], dat.macroinv_filt[,"ID"])
+
+PCA1_mac_50<- as.data.frame(pca_result_mac$x[,c("PC1", "PC2")]) #PC1 data frame
+Clim_mac_50 <- PCA1_mac_50 #Climatic matrix
+dat.macroinv_filt_50 <- cbind(dat.macroinv_filt, Clim_mac_50) #Climatic matrix added to macroinv matrix
+
+#Metaregression
+colnames(dat.macroinv_filt_50)
+round(as.dist(cor(dat.macroinv_filt1[,c("Range", "Position", "LUI_50", "PC1", "PC2")], use = "na.or.complete")),3) #Range and position have >0.7
+
+model_macroinv_50<- robu(yi ~ Transition+LUI_50+PC1+PC2+Range,
+                         data = dat.macroinv_filt1, 
+                         modelweights = "CORR", studynum = ID,  
+                         var.eff.size = vi , small = T)
+
+model_macroinv_50
+
+
+#75k buffer
+
+#Generating PCA axes
+colnames(data_macroinv)
+dat.macroinv_frame <- as.data.frame(dat.macroinv_filt[,c("Temp_media_75","Precipitacao_75","Temp_sazonal_75","Prec_sazonal_75")]) #climatic data to a data frame
+pca_result_mac <- prcomp(dat.macroinv_frame, scale=TRUE) #PCA with climatic data
+pca_result_mac
+plot(pca_result_mac$x[,"PC1"], pca_result_mac$x[,"PC2"])
+text(pca_result_mac$x[,"PC1"], pca_result_mac$x[,"PC2"], dat.macroinv_filt[,"ID"])
+
+PCA1_mac_75<- as.data.frame(pca_result_mac$x[,c("PC1", "PC2")]) #PC1 data frame
+Clim_mac_75 <- PCA1_mac_75 #Climatic matrix
+dat.macroinv_filt_75 <- cbind(dat.macroinv_filt, Clim_mac_75) #Climatic matrix added to macroinv matrix
+
+#Metaregression
+colnames(dat.macroinv_filt_75)
+round(as.dist(cor(dat.macroinv_filt1[,c("Range", "Position", "LUI_75", "PC1", "PC2")], use = "na.or.complete")),3) #Range and position have >0.7
+
+model_macroinv_75<- robu(yi ~ Transition+LUI_75+PC1+PC2+Range,
+                         data = dat.macroinv_filt1, 
+                         modelweights = "CORR", studynum = ID,  
+                         var.eff.size = vi , small = T)
+
+model_macroinv_75
+
+#100k buffer
+
+#Generating PCA axes
+colnames(data_macroinv)
+dat.macroinv_frame <- as.data.frame(dat.macroinv_filt[,c("Temp_media_100","Precipitacao_100","Temp_sazonal_100","Prec_sazonal_100")]) #climatic data to a data frame
+pca_result_mac <- prcomp(dat.macroinv_frame, scale=TRUE) #PCA with climatic data
+pca_result_mac
+plot(pca_result_mac$x[,"PC1"], pca_result_mac$x[,"PC2"])
+text(pca_result_mac$x[,"PC1"], pca_result_mac$x[,"PC2"], dat.macroinv_filt[,"ID"])
+
+PCA1_mac_100<- as.data.frame(pca_result_mac$x[,c("PC1", "PC2")]) #PC1 data frame
+Clim_mac_100 <- PCA1_mac_100 #Climatic matrix
+dat.macroinv_filt_100 <- cbind(dat.macroinv_filt, Clim_mac_100) #Climatic matrix added to macroinv matrix
+
+#Metaregression
+colnames(dat.macroinv_filt_100)
+round(as.dist(cor(dat.macroinv_filt1[,c("Range", "Position", "LUI_100", "PC1", "PC2")], use = "na.or.complete")),3) #Range and position have >0.7
+
+model_macroinv_100<- robu(yi ~ Transition+LUI_100+PC1+PC2+Range,
+                         data = dat.macroinv_filt1, 
+                         modelweights = "CORR", studynum = ID,  
+                         var.eff.size = vi , small = T)
+
+model_macroinv_100
+
+
+
+
 
 boxplot(dat.macroinv_filt1$yi~dat.macroinv_filt1$Transition)
 plot(dat.macroinv_filt1$yi~dat.macroinv_filt1$Topography)
@@ -94,31 +178,115 @@ length(unique(dat.fish_filt$ID)) #We lost 3 studies
 colnames(data_fish)
 correl_climate_fish <- cor(dat.fish_filt[,c("Temp_media","Precipitacao","Temp_sazonal","Prec_sazonal")]) 
 as.dist(correl_climate_fish) # Precipitacao and Temp_sazonal will be excluded from the analisys
-dat.fish_filt1 <- subset(dat.fish_filt, select = -c(Precipitacao,Temp_sazonal))
-colnames(dat.fish_filt1)
+######dat.fish_filt1 <- subset(dat.fish_filt, select = -c(Precipitacao,Temp_sazonal))
+#####colnames(dat.fish_filt1)
+
+##Now, we will make 4 metaregressions, one for each spatial scale
+#25km buffer
 
 #Generating PCA axes
-
-dat.fish_frame <- as.data.frame(dat.fish_filt[,c("Temp_media","Precipitacao","Temp_sazonal","Prec_sazonal")]) #climatic data to a data frame
+colnames(data_fish)
+dat.fish_frame <- as.data.frame(dat.fish_filt[,c("Temp_media_25","Precipitacao_25","Temp_sazonal_25","Prec_sazonal_25")]) #climatic data to a data frame
 pca_result_fish <- prcomp(dat.fish_frame, scale=TRUE) #PCA with climatic data
-pca_result_mac
+pca_result_fish
 plot(pca_result_fish$x[,"PC1"], pca_result_fish$x[,"PC2"])
 text(pca_result_fish$x[,"PC1"], pca_result_fish$x[,"PC2"], dat.fish_filt[,"ID"])
-PCA1_fish<- as.data.frame(pca_result_fish$x[,c("PC1", "PC2")]) #PC1 data frame
-Clim_fish <- PCA1_fish #Climatic matrix
-dat.fish_filt1 <- cbind(dat.fish_filt, Clim_fish) #Climatic matrix added to macroinv matrix
+
+PCA1_fish_25<- as.data.frame(pca_result_fish$x[,c("PC1", "PC2")]) #PC1 data frame
+Clim_fish_25 <- PCA1_fish_25 #Climatic matrix
+dat.fish_filt_25 <- cbind(dat.fish_filt, Clim_fish_25) #Climatic matrix added to fish matrix
 
 #Metaregression
-colnames(dat.fish_filt1)
-round(as.dist(cor(dat.fish_filt1[,c("Range", "Position", "LUI","ADR", "Topography", 
-                                        "PC1", "PC2")], use = "na.or.complete")),3) #Range and position have >0.7
+colnames(dat.fish_filt_25)
+head(dat.fish_filt_25)
+round(as.dist(cor(dat.fish_filt_25[,c("Range", "Position", "LUI_25", "PC1", "PC2")], use = "na.or.complete")),3) #Range and position have >0.7
 
-model_fish<- robu(yi ~ Transition+LUI+PC1+PC2+Range,     
-                            data = dat.fish_filt1, 
-                            modelweights = "CORR", studynum = ID,  
-                            var.eff.size = vi , small = T)
+model_fish_25<- robu(yi ~ Transition+LUI_25+PC1+PC2+Range,
+                         data = dat.fish_filt_25, 
+                         modelweights = "CORR", studynum = ID,  
+                         var.eff.size = vi , small = T)
 
-model_fish
+model_fish_25
+
+#50km buffer
+
+#Generating PCA axes
+colnames(data_fish)
+dat.fish_frame <- as.data.frame(dat.fish_filt[,c("Temp_media_50","Precipitacao_50","Temp_sazonal_50","Prec_sazonal_50")]) #climatic data to a data frame
+pca_result_fish <- prcomp(dat.fish_frame, scale=TRUE) #PCA with climatic data
+pca_result_fish
+plot(pca_result_fish$x[,"PC1"], pca_result_fish$x[,"PC2"])
+text(pca_result_fish$x[,"PC1"], pca_result_fish$x[,"PC2"], dat.fish_filt[,"ID"])
+
+PCA1_fish_50<- as.data.frame(pca_result_fish$x[,c("PC1", "PC2")]) #PC1 data frame
+Clim_fish_50 <- PCA1_fish_50 #Climatic matrix
+dat.fish_filt_50 <- cbind(dat.fish_filt, Clim_fish_50) #Climatic matrix added to fish matrix
+
+#Metaregression
+colnames(dat.fish_filt_50)
+head(dat.fish_filt_50)
+round(as.dist(cor(dat.fish_filt_50[,c("Range", "Position", "LUI_50", "PC1", "PC2")], use = "na.or.complete")),3) #Range and position have >0.7
+
+model_fish_50<- robu(yi ~ Transition+LUI_50+PC1+PC2+Range,
+                     data = dat.fish_filt_50, 
+                     modelweights = "CORR", studynum = ID,  
+                     var.eff.size = vi , small = T)
+
+model_fish_50
+
+#75km buffer
+
+#Generating PCA axes
+colnames(data_fish)
+dat.fish_frame <- as.data.frame(dat.fish_filt[,c("Temp_media_75","Precipitacao_75","Temp_sazonal_75","Prec_sazonal_75")]) #climatic data to a data frame
+pca_result_fish <- prcomp(dat.fish_frame, scale=TRUE) #PCA with climatic data
+pca_result_fish
+plot(pca_result_fish$x[,"PC1"], pca_result_fish$x[,"PC2"])
+text(pca_result_fish$x[,"PC1"], pca_result_fish$x[,"PC2"], dat.fish_filt[,"ID"])
+
+PCA1_fish_75<- as.data.frame(pca_result_fish$x[,c("PC1", "PC2")]) #PC1 data frame
+Clim_fish_75 <- PCA1_fish_75 #Climatic matrix
+dat.fish_filt_75 <- cbind(dat.fish_filt, Clim_fish_75) #Climatic matrix added to fish matrix
+
+#Metaregression
+colnames(dat.fish_filt_75)
+head(dat.fish_filt_75)
+round(as.dist(cor(dat.fish_filt_75[,c("Range", "Position", "LUI_75", "PC1", "PC2")], use = "na.or.complete")),3) #Range and position have >0.7
+
+model_fish_75<- robu(yi ~ Transition+LUI_75+PC1+PC2+Range,
+                     data = dat.fish_filt_75, 
+                     modelweights = "CORR", studynum = ID,  
+                     var.eff.size = vi , small = T)
+
+model_fish_75
+
+#100km buffer
+
+#Generating PCA axes
+colnames(data_fish)
+dat.fish_frame <- as.data.frame(dat.fish_filt[,c("Temp_media_100","Precipitacao_100","Temp_sazonal_100","Prec_sazonal_100")]) #climatic data to a data frame
+pca_result_fish <- prcomp(dat.fish_frame, scale=TRUE) #PCA with climatic data
+pca_result_fish
+plot(pca_result_fish$x[,"PC1"], pca_result_fish$x[,"PC2"])
+text(pca_result_fish$x[,"PC1"], pca_result_fish$x[,"PC2"], dat.fish_filt[,"ID"])
+
+PCA1_fish_100<- as.data.frame(pca_result_fish$x[,c("PC1", "PC2")]) #PC1 data frame
+Clim_fish_100 <- PCA1_fish_100 #Climatic matrix
+dat.fish_filt_100 <- cbind(dat.fish_filt, Clim_fish_100) #Climatic matrix added to fish matrix
+
+#Metaregression
+colnames(dat.fish_filt_100)
+head(dat.fish_filt_100)
+round(as.dist(cor(dat.fish_filt_100[,c("Range", "Position", "LUI_100", "PC1", "PC2")], use = "na.or.complete")),3) #Range and position have >0.7
+
+model_fish_100<- robu(yi ~ Transition+LUI_100+PC1+PC2+Range,
+                     data = dat.fish_filt_100, 
+                     modelweights = "CORR", studynum = ID,  
+                     var.eff.size = vi , small = T)
+
+model_fish_100
+
+
 
 boxplot(dat.fish_filt1$yi~dat.fish_filt1$Transition)
 plot(dat.fish_filt1$yi~dat.fish_filt1$Topography)
