@@ -1,4 +1,4 @@
-# PhD_Meta-analysis_chapter
+# Data from: A global meta-analysis of the effects of land use on the diversity of stream fish and macroinvertebrates
 
 Cite the code: [![DOI](https://zenodo.org/badge/372843409.svg)](https://zenodo.org/badge/latestdoi/372843409)
 
