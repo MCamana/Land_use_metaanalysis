@@ -398,17 +398,4 @@ funnel(fit.fish)
 text(-1.3, 0.02, "Fishes")
 dev.off()
 
-###OLD####
-###Testing linear relationship betwen citations and Fishers'z
-
-data_cit <- read.table(here ("data","processed","citations.txt"), h=T) ##Citation data
-str (data_cit)
-colnames(data_cit)
-
-correl_cit <- cor(data_cit[,c("Cit_SCOPUS","yi")]) 
-
-test_citations <- lm (Cit_SCOPUS ~ yi-1,data = data_cit)
-summary(test_citations)
-plot(data_cit$yi~data_cit$Cit_SCOPUS)
-
 
